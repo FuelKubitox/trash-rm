@@ -48,16 +48,20 @@ func Parse(args []string) Command {
 // List all objects in the trash
 func listCommand(args []string, command Command) Command {
 	if len(args) == 1 {
+		// If only the list argument was passed
 		command.Action = "list"
 	} else if len(args) == 3 {
+		// When you want to list objects in the trash by tags
 		if args[1] == "-t" {
 			command.Action = "list"
 			command.Parameters = []string{"t"}
 			command.Tags = strings.Split(args[2], ",")
 		} else {
+			// When the tag parameter doesnt match
 			command.Action = "wrongArguments"
 		}
 	} else {
+		// If the amount of arguments are wrong
 		command.Action = "wrongArguments"
 	}
 	return command
