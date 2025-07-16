@@ -69,6 +69,27 @@ func listCommand(args []string, command Command) Command {
 
 // Move a file or folder to the trash
 func deleteCommand(args []string, command Command) Command {
+	if len(args) == 2 {
+		command.Action = "delete"
+		command.Target = args[1]
+	} else if len(args) == 3 {
+		if args[1] == "-c" {
+			command.Action = "delete"
+			command.Parameters = []string{"c"}
+			command.Target = args[2]
+		}
+	} else if len(args) == 4 {
+		if args[1] == "-t" {
+			command.Action = "delete"
+			command.Parameters = []string{"t"}
+			command.Tags = strings.Split(args[2], ",")
+			command.Target = args[3]
+		} else {
+			command.Action = "wrongArguments"
+		}
+	} else {
+		command.Action = "wrongArguments"
+	}
 	return command
 }
 
