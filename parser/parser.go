@@ -1,7 +1,8 @@
 package parser
 
 import (
-	"fmt"
+	"errors"
+	"path/filepath"
 	"strconv"
 	"strings"
 )
@@ -16,7 +17,6 @@ import (
 	sync - Sync database with trash on filesystem and delete unnecassary entries
 	help - Shows the help
 */
-
 type Command struct {
 	Action string
 	Parameters []string
@@ -26,32 +26,63 @@ type Command struct {
 	Destination string
 }
 
+// Contains the absolute path from the directory were we executed the program
+var absolutePath string
+
 // Check all arguments and parse them. Returns a Command object to execute the commands later
-func Parse(args []string) Command {
+func Parse(argsFull []string) (Command, error) {
+	var err error
+
+	// Create an empty command object
 	command := Command{"", []string{}, []string{}, 0, "", ""}
 
+	// First get the absolute path from the dirctory were we executed the program.
+	// We need that later to join the path with the path from the user.
+	var path string
+	path, err = filepath.Abs(filepath.Dir(argsFull[0]))
+	if err != nil {
+		return command, errors.New("cant get the absolute path from the directory you executed the program")
+	}
+	absolutePath = path
+
+	// Filter the arguments and filter the first element (its usually the program name)
+	args := argsFull[1:]
+
+	// Choose and create command object with action
 	switch args[0] {
 		case "list":
-			command = listCommand(args, command)
+			if command, err = listCommand(args, command); err != nil {
+				return command, err
+			}
 		case "delete":
-			command = deleteCommand(args, command)
+			if command, err = deleteCommand(args, command); err != nil {
+				return command, err
+			}
 		case "restore":
-			command = restoreCommand(args, command)
+			if command, err = restoreCommand(args, command); err != nil {
+				return command, err
+			}
 		case "empty":
-			command = emptyCommand(args, command)
+			if command, err = emptyCommand(args, command); err != nil {
+				return command, err
+			}
 		case "help":
-			command = helpCommand(args, command)
+			if command, err = helpCommand(args, command); err != nil {
+				return command, err
+			}
 		case "sync":
-			command = syncCommand(args, command)
+			if command, err = syncCommand(args, command); err != nil {
+				return command, err
+			}
 		default:
-			fmt.Println("Wrong arguments. You can show the help with trm help")
+			return command, errors.New("wrong arguments. You can show the help with trm help")
 	}
 
-	return command
+	return command, nil
 }
 
 // List all objects in the trash
-func listCommand(args []string, command Command) Command {
+func listCommand(args []string, command Command) (Command, error) {
 	if len(args) == 1 {
 		// If only the list argument was passed
 		command.Action = "list"
@@ -63,27 +94,27 @@ func listCommand(args []string, command Command) Command {
 			command.Tags = strings.Split(args[2], ",")
 		} else {
 			// When the tag parameter doesnt match
-			command.Action = "wrongArguments"
+			return command, errors.New("wrong arguments")
 		}
 	} else {
 		// If the amount of arguments are wrong
-		command.Action = "wrongArguments"
+		return command, errors.New("wrong arguments")
 	}
-	return command
+	return command, nil
 }
 
 // Move a file or folder to the trash
-func deleteCommand(args []string, command Command) Command {
+func deleteCommand(args []string, command Command) (Command, error) {
 	if len(args) == 2 {
 		// Basic delete with only the file/folder name
 		command.Action = "delete"
-		command.Target = args[1]
+		command.Target = filepath.Join(absolutePath, args[1])
 	} else if len(args) == 3 {
 		// Delete with compression
 		if args[1] == "-c" {
 			command.Action = "delete"
 			command.Parameters = []string{"c"}
-			command.Target = args[2]
+			command.Target = filepath.Join(absolutePath, args[2])
 		}
 	} else if len(args) == 4 {
 		// Delete with tags
@@ -91,9 +122,9 @@ func deleteCommand(args []string, command Command) Command {
 			command.Action = "delete"
 			command.Parameters = []string{"t"}
 			command.Tags = strings.Split(args[2], ",")
-			command.Target = args[3]
+			command.Target = filepath.Join(absolutePath, args[3])
 		} else {
-			command.Action = "wrongArguments"
+			return command, errors.New("wrong arguments")
 		}
 	} else if len(args) == 5 {
 		// Delete with tags and compression
@@ -101,28 +132,28 @@ func deleteCommand(args []string, command Command) Command {
 			command.Action = "delete"
 			command.Parameters = []string{"t", "c"}
 			command.Tags = strings.Split(args[2], ",")
-			command.Target = args[4]
+			command.Target = filepath.Join(absolutePath, args[4])
 		} else if args[1] == "-c" && args[2] == "-t" {
 			command.Action = "delete"
 			command.Parameters = []string{"t", "c"}
 			command.Tags = strings.Split(args[3], ",")
-			command.Target = args[4]
+			command.Target = filepath.Join(absolutePath, args[4])
 		} else {
-			command.Action = "wrongArguments"
+			return command, errors.New("wrong arguments")
 		}
 	} else {
-		command.Action = "wrongArguments"
+		return command, errors.New("wrong arguments")
 	}
-	return command
+	return command, nil
 }
 
 // Restore an object in the trash
-func restoreCommand(args []string, command Command) Command {
+func restoreCommand(args []string, command Command) (Command, error) {
 	if len(args) == 2 {
 		// Restore by id
 		id, err := strconv.Atoi(args[1])
 		if err != nil {
-			fmt.Println("Passed id is not a number")
+			return command, errors.New("passed id is not a number")
 		}
 		command.Action = "restore"
 		command.Id = id
@@ -133,44 +164,44 @@ func restoreCommand(args []string, command Command) Command {
 			command.Parameters = []string{"t"}
 			command.Tags = strings.Split(args[2], ",")
 		} else {
-			command.Action = "wrongArguments"
+			return command, errors.New("wrong arguments")
 		}
 	} else if len(args) == 4 {
 		// Restore by id with destination
 		if args[2] == "-d" {
 			id, err := strconv.Atoi(args[1])
 			if err != nil {
-				fmt.Println("Passed id is not a number")
+				return command, errors.New("passed id is not a number")
 			}
 			command.Action = "restore"
 			command.Parameters = []string{"d"}
 			command.Id = id
-			command.Destination = args[3]
+			command.Destination = filepath.Join(absolutePath, args[3])
 		} else {
-			command.Action = "wrongArguments"
+			return command, errors.New("wrongArguments")
 		}
 	} else {
-		command.Action = "wrongArguments"
+		return command, errors.New("wrongArguments")
 	}
-	return command
+	return command, nil
 }
 
 // Delete the objects in the trash and free space
-func emptyCommand(args []string, command Command) Command {
-	return command
+func emptyCommand(args []string, command Command) (Command, error) {
+	return command, nil
 }
 
 // Sync the database with the trash on the filesystem
-func syncCommand(args []string, command Command) Command {
-	return command
+func syncCommand(args []string, command Command) (Command, error) {
+	return command, nil
 }
 
 // Show the help
-func helpCommand(args []string, command Command) Command {
+func helpCommand(args []string, command Command) (Command, error) {
 	if len(args) == 1 {
 		command.Action = "help"
 	} else {
-		command.Action = "wrongArguments"
+		return command, errors.New("wrongArguments")
 	}
-	return command
+	return command, nil
 }
