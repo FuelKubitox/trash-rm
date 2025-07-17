@@ -2,7 +2,6 @@ package commands
 
 import (
 	"errors"
-	"fmt"
 	"os"
 	"path"
 	"path/filepath"
@@ -40,22 +39,21 @@ func basicDelete(command parser.Command) error {
 	if _, err := os.Stat(trashDir); os.IsNotExist(err) {
 		os.Mkdir(trashDir, os.ModePerm)
 	}
-
-	// Get only the target if a path was passed
-	target := path.Base(command.Target)
-	
-	// Define the destination path for the trash
-	destination := filepath.Join(trashDir, target)
-	fmt.Println(destination)
 	
 	if targetInfo.IsDir() {
 		// Move the target if its a directory
-		if err = utility.MoveDirectory(make(chan int, 10), command.Target, destination); err != nil {
+		if err = utility.MoveDirectory(make(chan int, 10), command.Target, trashDir); err != nil {
 			return err
 		}
 	} else {
+		// Get only the target if a path was passed
+		targetBase := path.Base(command.Target)
+	
+		// Define the destination path for the trash
+		destinationFile := filepath.Join(trashDir, targetBase)
+		
 		// Move the target if its a file
-		if err = utility.MoveFile(command.Target, destination); err != nil {
+		if err = utility.MoveFile(command.Target, destinationFile); err != nil {
 			return err
 		}
 	}

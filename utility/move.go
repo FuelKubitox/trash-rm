@@ -3,7 +3,6 @@ package utility
 import (
 	"fmt"
 	"io"
-	"log"
 	"os"
 	"path"
 )
@@ -17,7 +16,7 @@ type MoveFileInfo struct {
 }
 
 func MoveDirectory(moveLimiter chan int, srcDir string, destParentDir string) error {
-	log.Printf("Moving directory '%s' to '%s'...", srcDir, destParentDir)
+	fmt.Printf("Moving directory '%s' to '%s'...\n", srcDir, destParentDir)
 
 	srcDirInfo, err := os.Stat(srcDir)
 	if err != nil {
@@ -75,7 +74,7 @@ func MoveDirectory(moveLimiter chan int, srcDir string, destParentDir string) er
 					childDir := path.Join(srcDir, dirChildInfo.Name())
 					err = MoveDirectory(moveLimiter, childDir, destDir)
 					if err != nil {
-						log.Printf("Error moving directory '%s' to '%s': %s", childDir, destDir, err)
+						fmt.Printf("Error moving directory '%s' to '%s': %s\n", childDir, destDir, err)
 						moveErrors = append(moveErrors, err)
 					}
 				} else {
@@ -88,7 +87,7 @@ func MoveDirectory(moveLimiter chan int, srcDir string, destParentDir string) er
 			for _, resultChan := range resultChans {
 				moveFileInfo := <-resultChan
 				if moveFileInfo.Error != nil {
-					log.Printf("Error moving file '%s' to '%s': %s", moveFileInfo.SrcFile, moveFileInfo.DestDir, moveFileInfo.Error)
+					fmt.Printf("Error moving file '%s' to '%s': %s\n", moveFileInfo.SrcFile, moveFileInfo.DestDir, moveFileInfo.Error)
 					moveErrors = append(moveErrors, moveFileInfo.Error)
 				}
 			}
@@ -117,7 +116,7 @@ func MoveDirectory(moveLimiter chan int, srcDir string, destParentDir string) er
 		return err
 	}
 
-	log.Printf("Moved directory '%s' to '%s'.", srcDir, destDir)
+	fmt.Printf("Moved directory '%s' to '%s'.\n", srcDir, destDir)
 	return nil
 }
 
@@ -142,7 +141,7 @@ func MoveFile(srcFile string, destDir string) error {
 		return err
 	}
 
-	log.Printf("Moving file '%s' to '%s' (%s)", srcFile, destFile, ByteSize(srcFileInfo.Size()))
+	fmt.Printf("Moving file '%s' to '%s' (%s)\n", srcFile, destFile, ByteSize(srcFileInfo.Size()))
 
 	srcFileMode := srcFileInfo.Mode()
 	isSrcSymLink := srcFileMode&os.ModeSymlink != 0
@@ -224,7 +223,7 @@ func MoveFile(srcFile string, destDir string) error {
 		return err
 	}
 
-	log.Printf("Moved file '%s' to '%s'", srcFile, destFile)
+	fmt.Printf("Moved file '%s' to '%s'\n", srcFile, destFile)
 	return nil
 }
 
@@ -232,7 +231,7 @@ func CloseFilesAfterErr(err error, files ...*os.File) error {
 	for _, file := range files {
 		otherErr := file.Close()
 		if otherErr != nil {
-			log.Println(err)
+			fmt.Println(err)
 		}
 	}
 	return err

@@ -1,7 +1,7 @@
 package main
 
 import (
-	"log"
+	"fmt"
 	"os"
 
 	"trash-rm/commands"
@@ -13,26 +13,29 @@ var err error
 
 func main() {
 	if command, err = parser.Parse(os.Args); err != nil {
-		log.Fatal(err)
+		fmt.Println(err)
+		os.Exit(1)
 	}
 
 	switch command.Action {
 		case "list":
-			log.Println("Listing all files and folder in trash")
+			fmt.Println("Listing all files and folder in trash")
 		case "delete":
-			log.Println("Start deleting")
+			fmt.Println("Start moving target(s) to trash...")
 			if err := commands.DeleteCommand(command); err != nil {
-				log.Fatal(err)
+				fmt.Println(err)
+				os.Exit(1)
 			}
 		case "restore":
-			log.Println("Restore an object in the trash")
+			fmt.Println("Restore an object in the trash")
 		case "empty":
-			log.Println("Empty the trash and free space")
+			fmt.Println("Empty the trash and free space")
 		case "help":
-			log.Println("Show help")
+			fmt.Println("Show help")
 		case "wrongArguments":
-			log.Println("Wrong arguments! To show help use: trm help")
+			fmt.Println("Wrong arguments! To show help use: trm help")
 		default:
-			log.Fatal("Unknow action!")
+			fmt.Println("Unknow action!")
+			os.Exit(1)
 	}
 }
