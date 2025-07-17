@@ -8,7 +8,7 @@ import (
 
 /*
 	Actions
-	--------------------
+	----------------------------------------------------------------------------
 	list - List all deleted files/folders
 	delete - Delete a file or folder
 	restore - Restore a file or folder
@@ -26,7 +26,7 @@ type Command struct {
 	Destination string
 }
 
-// Check all arguments and parse them. If everything is fine return true else false
+// Check all arguments and parse them. Returns a Command object to execute the commands later
 func Parse(args []string) Command {
 	command := Command{"", []string{}, []string{}, 0, "", ""}
 
