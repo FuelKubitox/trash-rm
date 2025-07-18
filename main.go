@@ -5,18 +5,28 @@ import (
 	"os"
 
 	"trash-rm/commands"
+	"trash-rm/database"
 	"trash-rm/parser"
 )
 
+// Command object contains everything to execute the program with its arguments
 var command parser.Command
 var err error
 
 func main() {
+	// Parse passed arguments
 	if command, err = parser.Parse(os.Args); err != nil {
 		fmt.Println(err)
 		os.Exit(1)
 	}
 
+	// Init database
+	if err := database.InitDB(); err != nil {
+		fmt.Println(err)
+		os.Exit(1)
+	}
+
+	// Execute passed arguments with the command object
 	switch command.Action {
 		case "list":
 			fmt.Println("Listing all files and folder in trash")
@@ -24,7 +34,6 @@ func main() {
 			fmt.Println("Start moving target(s) to trash...")
 			if err := commands.DeleteCommand(command); err != nil {
 				fmt.Println(err)
-				os.Exit(1)
 			}
 		case "restore":
 			fmt.Println("Restore an object in the trash")
@@ -32,10 +41,7 @@ func main() {
 			fmt.Println("Empty the trash and free space")
 		case "help":
 			fmt.Println("Show help")
-		case "wrongArguments":
-			fmt.Println("Wrong arguments! To show help use: trm help")
 		default:
 			fmt.Println("Unknow action!")
-			os.Exit(1)
 	}
 }
