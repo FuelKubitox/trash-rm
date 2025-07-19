@@ -20,7 +20,7 @@ func main() {
 		os.Exit(1)
 	}
 
-	// Init database
+	// Init database and create database object
 	if err := database.InitDB(); err != nil {
 		fmt.Println(err)
 		os.Exit(1)
