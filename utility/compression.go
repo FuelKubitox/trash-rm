@@ -106,6 +106,16 @@ func UncompressFile(source string, dest string) error {
 // sourceDir: directory to compress with absolute path
 // destinationFile: absolute path to the file in the trash with the suffix .gz at the end
 func CompressDir(source string, dest string) error {
+	// Count all files
+    files, err := listFiles(source)
+    if err != nil {
+        return err
+    }
+    total := len(files)
+    if total == 0 {
+        return fmt.Errorf("now files in directory found: %s", source)
+    }
+
     // Create target file during compress
     dfile, err := os.Create(dest)
     if err != nil {
@@ -126,43 +136,49 @@ func CompressDir(source string, dest string) error {
     defer twriter.Close()
 
     // Walk recursivly through the directory
-    return filepath.Walk(source, func(file string, fi os.FileInfo, err error) error {
+    for i, file := range files {
+		relPath, err := filepath.Rel(source, file)
         if err != nil {
             return err
         }
 
-        // Keep relativ path
-        relPath, err := filepath.Rel(source, file)
-        if err != nil {
+        if err := addFileToTar(twriter, file, relPath); err != nil {
             return err
         }
 
-        // Change directory path if necessary
-        if fi.IsDir() {
-            return nil
-        }
+        // Fortschritt ausgeben
+        printProgress(i+1, total, relPath)
+	}
 
-        // Open file
-        f, err := os.Open(file)
-        if err != nil {
-            return err
-        }
-        defer f.Close()
+	return nil
+}
 
-        // Write header
-        header, err := tar.FileInfoHeader(fi, "")
-        if err != nil {
-            return err
-        }
-        header.Name = filepath.ToSlash(relPath) // UNIX compatible path
-        if err := twriter.WriteHeader(header); err != nil {
-            return err
-        }
-
-        // Write file
-        _, err = io.Copy(twriter, f)
+// Add file to tar archive
+func addFileToTar(tw *tar.Writer, path, relPath string) error {
+    fi, err := os.Stat(path)
+    if err != nil {
         return err
-    })
+    }
+
+    f, err := os.Open(path)
+    if err != nil {
+        return err
+    }
+    defer f.Close()
+
+    header, err := tar.FileInfoHeader(fi, "")
+    if err != nil {
+        return err
+    }
+
+    header.Name = filepath.ToSlash(relPath)
+
+    if err := tw.WriteHeader(header); err != nil {
+        return err
+    }
+
+    _, err = io.Copy(tw, f)
+    return err
 }
 
 // Uncompress a file from trash
@@ -185,6 +201,16 @@ func UncompressDir(source string, dest string) error {
 
     // Create tar reader
     treader := tar.NewReader(greader)
+
+	// Total files
+	totalFiles := 0
+
+	entries, err := countTarEntries(source)
+    if err != nil {
+        return err
+    }
+
+	fmt.Printf("Restore %d entries...\n\n", entries)
 
     // Loop through the tar archive
     for {
@@ -231,7 +257,62 @@ func UncompressDir(source string, dest string) error {
         default:
             fmt.Printf("Skip unknown type: %v in %s\n", header.Typeflag, header.Name)
         }
+
+		totalFiles++
+		printProgress(totalFiles, entries, header.Name)
     }
 
     return nil
+}
+
+// Count all files recursively
+func listFiles(root string) ([]string, error) {
+    var files []string
+    err := filepath.Walk(root, func(path string, info os.FileInfo, err error) error {
+        if err != nil {
+            return err
+        }
+        if info.Mode().IsRegular() {
+            files = append(files, path)
+        }
+        return nil
+    })
+    return files, err
+}
+
+// Print progress
+func printProgress(current, total int, name string) {
+    percent := float64(current) / float64(total) * 100
+    fmt.Printf("[%3.0f%%] %s\n", percent, name)
+}
+
+// Count entries in archive during uncompress
+func countTarEntries(archive string) (int, error) {
+    f, err := os.Open(archive)
+    if err != nil {
+        return 0, err
+    }
+    defer f.Close()
+
+    greader, err := gzip.NewReader(f)
+    if err != nil {
+        return 0, err
+    }
+    defer greader.Close()
+
+    tarReader := tar.NewReader(greader)
+
+    count := 0
+    for {
+        _, err := tarReader.Next()
+        if err == io.EOF {
+            break
+        }
+        if err != nil {
+            return 0, err
+        }
+        count++
+    }
+
+    return count, nil
 }
