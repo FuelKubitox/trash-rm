@@ -6,6 +6,7 @@ import (
 	"os"
 	"path"
 	"path/filepath"
+	"strconv"
 	"strings"
 
 	"trash-rm/parser"
@@ -44,25 +45,39 @@ func basicDelete(command parser.Command) error {
 	}
 	
 	if targetInfo.IsDir() {
+		baseDir := path.Base(command.Target)
+		destFile := path.Join(trashDir, baseDir + ".gz")
+
+		// Check if the file in the trash exists and change the filename if yes
+		destFile = checkIfDestExists(destFile)
+
 		// Compress the target if its a directory
-		if err = utility.CompressDir(command.Target, trashDir); err != nil {
+		if err = utility.CompressDir(command.Target, destFile); err != nil {
+			return err
+		}
+
+		// Remove the directory
+		if err = os.RemoveAll(command.Target); err != nil {
 			return err
 		}
 	} else {
 		// Get only the target if a path was passed
-		targetBase := path.Base(command.Target)
+		destBase := path.Base(command.Target)
 
 		// Get index at leat occurence from point
-		index := strings.LastIndex(targetBase, ".")
+		index := strings.LastIndex(destBase, ".")
 	
 		// Change suffix to .gz
-		targetBase = targetBase[:index] + ".gz"
+		destBase = destBase[:index] + ".gz"
 
 		// Define the destination path for the trash
-		destinationFile := filepath.Join(trashDir, targetBase)
+		destFile := filepath.Join(trashDir, destBase)
+
+		// Check if the file in the trash exists and change the filename if yes
+		destFile = checkIfDestExists(destFile)
 		
 		// Compress the target if its a file
-		if err = utility.CompressFile(command.Target, destinationFile); err != nil {
+		if err = utility.CompressFile(command.Target, destFile); err != nil {
 			return err
 		}
 
@@ -73,4 +88,22 @@ func basicDelete(command parser.Command) error {
 		}
 	}
 	return nil
+}
+
+func checkIfDestExists(dest string) string {
+	var err error
+	// File count
+	count := 1
+	// Get file info
+	_, err = os.Stat(dest)
+	// If file info returns an error, then add the file count to the filename and loop until the file doesnt exist
+	// So we always have a new file in the trash and dont overwrite an existing one
+	for !os.IsNotExist(err) {
+		dir := path.Dir(dest)
+		file := path.Base(dest)
+		i := strings.LastIndex(file, ".")
+		dest = path.Join(dir, file[:i] + strconv.Itoa(count) + file[i:])
+		_, err = os.Stat(dest)
+	}
+	return dest
 }
