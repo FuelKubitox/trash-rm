@@ -75,16 +75,30 @@ func createTables() error {
 	return nil
 }
 
-// Insert a new trash entry without tags
-func Insert(basename string, from string, to string) error {
-	insert := "INSERT INTO trash_table " +
-		"(basename, from_path, trash_path) VALUES (" +
-		basename + "," +
-		from + "," +
-		to + ");"
-	if _, err := Db.Exec(insert); err != nil {
+// Insert a new trash entry
+func Insert(basename string, from string, to string, tags []string) error {
+	insertTrash := "INSERT INTO trash_table " +
+		"(basename, from_path, trash_path) VALUES (?, ?, ?);"
+	result, err := Db.Exec(insertTrash, basename, from, to)
+	if err != nil {
 		fmt.Println(err)
 		return errors.New("could not create trash entry in database")
+	}
+
+	// Loop through the tags array and add the tag to tags_table if they exist
+	for _, tagname := range tags {
+		insertTags := "INSERT INTO tags_table " +
+		"(tagname, trash_tag_id) VALUES (?, ?);"
+		id, errId := result.LastInsertId()
+		if errId != nil {
+			fmt.Println(err)
+			return errors.New("trash entry didnt return a correct result during adding it to the database")
+		}
+		_, errExec := Db.Exec(insertTags, tagname, id)
+		if errExec != nil {
+			fmt.Println(err)
+			return errors.New("could not create tags related to trash entry in database")
+		}		
 	}
 
 	return nil

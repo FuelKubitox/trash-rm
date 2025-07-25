@@ -2,9 +2,11 @@ package commands
 
 import (
 	"errors"
+	"fmt"
 	"os"
 	"path"
 	"path/filepath"
+	"strings"
 
 	"trash-rm/parser"
 	"trash-rm/utility"
@@ -28,6 +30,7 @@ func basicDelete(command parser.Command) error {
 	var targetInfo os.FileInfo
 	var err error
 	if targetInfo, err = os.Stat(command.Target); os.IsNotExist(err) {
+		fmt.Println(err)
 		return errors.New("file or folder that was passed doesnt exist")
 	}
 	
@@ -41,20 +44,32 @@ func basicDelete(command parser.Command) error {
 	}
 	
 	if targetInfo.IsDir() {
-		// Move the target if its a directory
-		if err = utility.MoveDirectory(make(chan int, 10), command.Target, trashDir); err != nil {
+		// Compress the target if its a directory
+		if err = utility.CompressDir(command.Target, trashDir); err != nil {
 			return err
 		}
 	} else {
 		// Get only the target if a path was passed
 		targetBase := path.Base(command.Target)
+
+		// Get index at leat occurence from point
+		index := strings.LastIndex(targetBase, ".")
 	
+		// Change suffix to .gz
+		targetBase = targetBase[:index] + ".gz"
+
 		// Define the destination path for the trash
 		destinationFile := filepath.Join(trashDir, targetBase)
 		
-		// Move the target if its a file
-		if err = utility.MoveFile(command.Target, destinationFile); err != nil {
+		// Compress the target if its a file
+		if err = utility.CompressFile(command.Target, destinationFile); err != nil {
 			return err
+		}
+
+		// Delete source file
+		if err := os.Remove(command.Target); err != nil {
+			fmt.Println(err)
+			return errors.New("couldnt remove source file after compression")
 		}
 	}
 	return nil
