@@ -109,33 +109,11 @@ func deleteCommand(args []string, command Command) (Command, error) {
 		// Basic delete with only the file/folder name
 		command.Action = "delete"
 		command.Target = filepath.Join(absolutePath, args[1])
-	} else if len(args) == 3 {
-		// Delete with compression
-		if args[1] == "-c" {
-			command.Action = "delete"
-			command.Parameters = []string{"c"}
-			command.Target = filepath.Join(absolutePath, args[2])
-		}
 	} else if len(args) == 4 {
 		// Delete with tags
 		if args[1] == "-t" {
 			command.Action = "delete"
 			command.Parameters = []string{"t"}
-			command.Tags = strings.Split(args[2], ",")
-			command.Target = filepath.Join(absolutePath, args[3])
-		} else {
-			return command, errors.New("wrong arguments")
-		}
-	} else if len(args) == 5 {
-		// Delete with tags and compression
-		if args[1] == "-t" && args[3] == "-c" {
-			command.Action = "delete"
-			command.Parameters = []string{"t", "c"}
-			command.Tags = strings.Split(args[2], ",")
-			command.Target = filepath.Join(absolutePath, args[4])
-		} else if args[1] == "-c" && args[2] == "-t" {
-			command.Action = "delete"
-			command.Parameters = []string{"t", "c"}
 			command.Tags = strings.Split(args[3], ",")
 			command.Target = filepath.Join(absolutePath, args[4])
 		} else {

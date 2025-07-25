@@ -114,8 +114,12 @@ func CompressDir(source string, dest string) error {
     defer dfile.Close()
 
     // Create gzip writer
-    gwriter := gzip.NewWriter(dfile)
-    defer gwriter.Close()
+    gwriter, err := gzip.NewWriterLevel(dfile, gzip.BestSpeed)
+    if err != nil {
+		fmt.Println(err)
+		return errors.New("couldnt create gzip writer during compress")
+	}
+	defer gwriter.Close()
 
     // Create tar writer
     twriter := tar.NewWriter(gwriter)
