@@ -44,4 +44,6 @@ func main() {
 		default:
 			fmt.Println("Unknow action!")
 	}
+
+	defer database.Db.Close()
 }

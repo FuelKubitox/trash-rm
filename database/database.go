@@ -34,7 +34,6 @@ func InitDB() error {
 		fmt.Println(err)
 		return errors.New("couldnt create or connect to database")
 	}
-	defer Db.Close()
 
 	// Create tables if necessary
 	if err := createTables(); err != nil {
@@ -79,7 +78,12 @@ func createTables() error {
 func Insert(basename string, from string, to string, tags []string) error {
 	insertTrash := "INSERT INTO trash_table " +
 		"(basename, from_path, trash_path) VALUES (?, ?, ?);"
-	result, err := Db.Exec(insertTrash, basename, from, to)
+	statement, err := Db.Prepare(insertTrash)
+	if err != nil {
+		fmt.Println(err)
+		return errors.New("couldnt prepare INSERT")
+	}
+	result, err := statement.Exec(basename, from, to)
 	if err != nil {
 		fmt.Println(err)
 		return errors.New("could not create trash entry in database")

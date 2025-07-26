@@ -9,6 +9,7 @@ import (
 	"strconv"
 	"strings"
 
+	"trash-rm/database"
 	"trash-rm/parser"
 	"trash-rm/utility"
 )
@@ -51,6 +52,9 @@ func basicDelete(command parser.Command) error {
 		// Check if the file in the trash exists and change the filename if yes
 		destFile = checkIfDestExists(destFile)
 
+		// Create the database entry
+		database.Insert(baseDir, command.Target, destFile, []string{})
+
 		// Compress the target if its a directory
 		if err = utility.CompressDir(command.Target, destFile); err != nil {
 			return err
@@ -62,20 +66,23 @@ func basicDelete(command parser.Command) error {
 		}
 	} else {
 		// Get only the target if a path was passed
-		destBase := path.Base(command.Target)
+		baseFile := path.Base(command.Target)
 
 		// Get index at leat occurence from point
-		index := strings.LastIndex(destBase, ".")
+		index := strings.LastIndex(baseFile, ".")
 	
 		// Change suffix to .gz
-		destBase = destBase[:index] + ".gz"
+		baseFile = baseFile[:index] + ".gz"
 
 		// Define the destination path for the trash
-		destFile := filepath.Join(trashDir, destBase)
+		destFile := filepath.Join(trashDir, baseFile)
 
 		// Check if the file in the trash exists and change the filename if yes
 		destFile = checkIfDestExists(destFile)
 		
+		// Create the database entry
+		database.Insert(baseFile, command.Target, destFile, []string{})
+
 		// Compress the target if its a file
 		if err = utility.CompressFile(command.Target, destFile); err != nil {
 			return err
@@ -87,9 +94,11 @@ func basicDelete(command parser.Command) error {
 			return errors.New("couldnt remove source file after compression")
 		}
 	}
+
 	return nil
 }
 
+// Check if the destination file exists, if yes change the filename and add a number
 func checkIfDestExists(dest string) string {
 	var err error
 	// File count
@@ -101,8 +110,12 @@ func checkIfDestExists(dest string) string {
 	for !os.IsNotExist(err) {
 		dir := path.Dir(dest)
 		file := path.Base(dest)
-		i := strings.LastIndex(file, ".")
-		dest = path.Join(dir, file[:i] + strconv.Itoa(count) + file[i:])
+		i := strings.LastIndex(file, "_")
+		if i == 0 {
+			i = strings.LastIndex(file, ".")
+		}
+		dest = path.Join(dir, file[:i] + "_" + strconv.Itoa(count) + ".gz")
+		
 		_, err = os.Stat(dest)
 	}
 	return dest
