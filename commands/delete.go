@@ -53,7 +53,9 @@ func basicDelete(command parser.Command) error {
 		destFile = checkIfDestExists(destFile)
 
 		// Create the database entry
-		database.Insert(baseDir, command.Target, destFile, []string{})
+		if err := database.Insert(baseDir, command.Target, destFile, []string{}); err != nil {
+			return err
+		}
 
 		// Compress the target if its a directory
 		if err = utility.CompressDir(command.Target, destFile); err != nil {
@@ -81,7 +83,9 @@ func basicDelete(command parser.Command) error {
 		destFile = checkIfDestExists(destFile)
 		
 		// Create the database entry
-		database.Insert(baseFile, command.Target, destFile, []string{})
+		if err := database.Insert(baseFile, command.Target, destFile, []string{}); err != nil {
+			return err
+		}
 
 		// Compress the target if its a file
 		if err = utility.CompressFile(command.Target, destFile); err != nil {

@@ -29,7 +29,10 @@ func main() {
 	// Execute passed arguments with the command object
 	switch command.Action {
 		case "list":
-			fmt.Println("Listing all files and folder in trash")
+			fmt.Println("Listing trash...")
+			if err := commands.ListCommand(command); err != nil {
+				fmt.Println(err)
+			}
 		case "delete":
 			fmt.Println("Start moving target(s) to trash...")
 			if err := commands.DeleteCommand(command); err != nil {

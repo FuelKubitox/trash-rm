@@ -3,9 +3,12 @@ package commands
 import (
 	"database/sql"
 	"fmt"
+	"time"
 
 	"trash-rm/database"
 	"trash-rm/parser"
+
+	"github.com/jedib0t/go-pretty/v6/table"
 )
 
 type TrashRow struct {
@@ -13,8 +16,8 @@ type TrashRow struct {
 	Basename string
 	FromPath string
 	TrashPath string
-	CreatedAt string
-	Tags []string
+	CreatedAt time.Time
+	Tags string
 }
 
 func ListCommand(command parser.Command) error {
@@ -25,6 +28,7 @@ func ListCommand(command parser.Command) error {
 		// If we want to list all trash objects from the database
 		result, err = listTrashAll()
 		if err != nil {
+			fmt.Println("Couldnt get data from db")
 			return err
 		}
 	} else if len(command.Parameters) == 1 && len(command.Tags) > 0 {
@@ -46,8 +50,8 @@ func ListCommand(command parser.Command) error {
 
 // List all objects in trash without any filter
 func listTrashAll() (*sql.Rows, error) {
-	selectAll := "SELECT trash_id, basename, from_path, trash_path, created_at" +
-				" FROM trash_table RIGHT JOIN tags_table" +
+	selectAll := "SELECT trash_id, basename, from_path, trash_path, created_at, GROUP_CONCAT(tags_table.tagname, ',') AS tags" +
+				" FROM trash_table LEFT JOIN tags_table" +
 				" ON trash_table.trash_id = tags_table.trash_tag_id"
 	result, err := database.Db.Query(selectAll)
 	if err != nil {
@@ -66,29 +70,43 @@ func listTrashTags(command parser.Command) (*sql.Rows, error) {
 // Take the query result and parse it to a TrashRow array struct
 func parseDbData(result *sql.Rows) ([]TrashRow, error) {
 	var trashList []TrashRow
+	var row TrashRow
+	var tags sql.NullString
 	for result.Next() {
-		trashRow := &TrashRow{}
 		err := result.Scan(
-			&trashRow.Id,
-			&trashRow.Basename,
-			&trashRow.FromPath,
-			&trashRow.TrashPath,
-			&trashRow.CreatedAt,
-			&trashRow.Tags,
+			&row.Id,
+			&row.Basename,
+			&row.FromPath,
+			&row.TrashPath,
+			&row.CreatedAt,
+			&tags,
 		)
+		row.Tags = tags.String
 		if err != nil {
-			fmt.Println("Couldnt apply selected data to struct TrashRow")
+			fmt.Println("Couldnt scan result from db")
 			return trashList, err
 		}
-		trashList = append(trashList, *trashRow)
+		trashList = append(trashList, row)
 	}
 	return trashList, nil
 }
 
 // Show the results form the array struct TrashRow
 func showTrashList(trashList []TrashRow) error {
+	t := table.NewWriter()
+	t.SetTitle("Trash")
+	t.SetStyle(table.StyleColoredBlackOnBlueWhite)
+    t.AppendHeader(table.Row{"ID", "Basename", "From", "To", "Tags", "Created"})
 	for _, trash := range trashList {
-		fmt.Printf("%+v", trash)
+		t.AppendRow(table.Row{
+			trash.Id,
+			trash.Basename,
+			trash.FromPath,
+			trash.TrashPath,
+			trash.Tags,
+			trash.CreatedAt,
+		})
 	}
+    fmt.Println(t.Render())
 	return nil
 }
