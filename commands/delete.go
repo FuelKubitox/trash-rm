@@ -18,8 +18,18 @@ const trash string = ".trash"
 
 func DeleteCommand(command parser.Command) error {
 	if len(command.Parameters) == 0 && command.Target != "" {
-		if err := basicDelete(command); err != nil {
+		if err := delete(command, []string{}); err != nil {
 			return err
+		}
+	} else if len(command.Parameters) == 1 && command.Target != "" {
+		if command.Parameters[0] != "-t" {
+			return errors.New("unknown parameter")
+		} else if len(command.Tags) == 0 {
+			return errors.New("no tags are passed")
+		} else {
+			if err := delete(command, command.Tags); err != nil {
+				return err
+			}
 		}
 	} else {
 		return errors.New("some mismatch in the command object")
@@ -27,7 +37,7 @@ func DeleteCommand(command parser.Command) error {
 	return nil
 }
 
-func basicDelete(command parser.Command) error {
+func delete(command parser.Command, tags []string) error {
 	// First check if the given target exists
 	var targetInfo os.FileInfo
 	var err error
@@ -53,7 +63,7 @@ func basicDelete(command parser.Command) error {
 		destFile = checkIfDestExists(destFile)
 
 		// Create the database entry
-		if err := database.Insert(baseDir, command.Target, destFile, []string{}); err != nil {
+		if err := database.Insert(baseDir, command.Target, destFile, tags); err != nil {
 			return err
 		}
 
@@ -83,7 +93,7 @@ func basicDelete(command parser.Command) error {
 		destFile = checkIfDestExists(destFile)
 		
 		// Create the database entry
-		if err := database.Insert(baseFile, command.Target, destFile, []string{}); err != nil {
+		if err := database.Insert(baseFile, command.Target, destFile, tags); err != nil {
 			return err
 		}
 

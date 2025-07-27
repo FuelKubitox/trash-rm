@@ -31,7 +31,7 @@ func ListCommand(command parser.Command) error {
 			fmt.Println("Couldnt get data from db")
 			return err
 		}
-	} else if len(command.Parameters) == 1 && len(command.Tags) > 0 {
+	} else if len(command.Parameters) == 1 && command.Parameters[0] == "-t" && len(command.Tags) > 0 {
 		// if we want to list trash objects filtered by tags from the database
 		result, err = listTrashTags(command)
 		if err != nil {
@@ -94,8 +94,8 @@ func parseDbData(result *sql.Rows) ([]TrashRow, error) {
 // Show the results form the array struct TrashRow
 func showTrashList(trashList []TrashRow) error {
 	t := table.NewWriter()
-	t.SetTitle("Trash")
 	t.SetStyle(table.StyleColoredBlackOnBlueWhite)
+	t.SetTitle("Trash")
     t.AppendHeader(table.Row{"ID", "Basename", "From", "To", "Tags", "Created"})
 	for _, trash := range trashList {
 		t.AppendRow(table.Row{
@@ -104,7 +104,7 @@ func showTrashList(trashList []TrashRow) error {
 			trash.FromPath,
 			trash.TrashPath,
 			trash.Tags,
-			trash.CreatedAt,
+			trash.CreatedAt.Local(),
 		})
 	}
     fmt.Println(t.Render())

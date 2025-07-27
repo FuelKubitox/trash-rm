@@ -90,7 +90,7 @@ func listCommand(args []string, command Command) (Command, error) {
 		// When you want to list objects in the trash by tags
 		if args[1] == "-t" {
 			command.Action = "list"
-			command.Parameters = []string{"t"}
+			command.Parameters = append(command.Parameters,args[1])
 			command.Tags = strings.Split(args[2], ",")
 		} else {
 			// When the tag parameter doesnt match
@@ -113,9 +113,9 @@ func deleteCommand(args []string, command Command) (Command, error) {
 		// Delete with tags
 		if args[1] == "-t" {
 			command.Action = "delete"
-			command.Parameters = []string{"t"}
-			command.Tags = strings.Split(args[3], ",")
-			command.Target = filepath.Join(absolutePath, args[4])
+			command.Parameters = append(command.Parameters,args[1])
+			command.Tags = strings.Split(args[2], ",")
+			command.Target = filepath.Join(absolutePath, args[3])
 		} else {
 			return command, errors.New("wrong arguments")
 		}
@@ -139,22 +139,22 @@ func restoreCommand(args []string, command Command) (Command, error) {
 		// Restore all objects in trash with tag
 		if args[1] == "-t" {
 			command.Action = "restore"
-			command.Parameters = []string{"t"}
+			command.Parameters = append(command.Parameters,args[1])
 			command.Tags = strings.Split(args[2], ",")
 		} else {
 			return command, errors.New("wrong arguments")
 		}
 	} else if len(args) == 4 {
 		// Restore by id with destination
-		if args[2] == "-d" {
-			id, err := strconv.Atoi(args[1])
+		if args[1] == "-d" {
+			command.Action = "restore"
+			command.Parameters = append(command.Parameters,args[1])
+			command.Destination = filepath.Join(absolutePath, args[2])
+			id, err := strconv.Atoi(args[3])
 			if err != nil {
 				return command, errors.New("passed id is not a number")
 			}
-			command.Action = "restore"
-			command.Parameters = []string{"d"}
 			command.Id = id
-			command.Destination = filepath.Join(absolutePath, args[3])
 		} else {
 			return command, errors.New("wrongArguments")
 		}
