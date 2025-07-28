@@ -2,6 +2,7 @@ package commands
 
 import (
 	"database/sql"
+	"errors"
 	"fmt"
 	"time"
 
@@ -63,7 +64,21 @@ func listTrashAll() (*sql.Rows, error) {
 
 // List objects filtered by tags
 func listTrashTags(command parser.Command) (*sql.Rows, error) {
-	var result *sql.Rows
+	selectWithTags := "SELECT trash_id, basename, from_path, trash_path, created_at, GROUP_CONCAT(tags_table.tagname, ',') AS tags" +
+				" FROM trash_table LEFT JOIN tags_table" +
+				" ON trash_table.trash_id = tags_table.trash_tag_id WHERE "
+	count := len(command.Tags)
+	for i, tag := range command.Tags {
+		selectWithTags += "tags_table.tagname = '" + tag + "'"
+		if i < count - 1 {
+			selectWithTags += " AND "
+		}
+	}
+	result, err := database.Db.Query(selectWithTags)
+	if err != nil {
+		fmt.Println("Couldnt select trash objects with tags from database")
+		return result, err
+	}
 	return result, nil
 }
 
@@ -73,14 +88,20 @@ func parseDbData(result *sql.Rows) ([]TrashRow, error) {
 	var row TrashRow
 	var tags sql.NullString
 	for result.Next() {
+		var id sql.NullInt32
 		err := result.Scan(
-			&row.Id,
+			&id,
 			&row.Basename,
 			&row.FromPath,
 			&row.TrashPath,
 			&row.CreatedAt,
 			&tags,
 		)
+		if id.Valid {
+			row.Id = int(id.Int32)
+		} else {
+			return trashList, errors.New("no entries found")
+		}
 		row.Tags = tags.String
 		if err != nil {
 			fmt.Println("Couldnt scan result from db")

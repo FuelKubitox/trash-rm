@@ -18,10 +18,12 @@ const trash string = ".trash"
 
 func DeleteCommand(command parser.Command) error {
 	if len(command.Parameters) == 0 && command.Target != "" {
+		// Without any parameters
 		if err := delete(command, []string{}); err != nil {
 			return err
 		}
 	} else if len(command.Parameters) == 1 && command.Target != "" {
+		// With parameters for tags
 		if command.Parameters[0] != "-t" {
 			return errors.New("unknown parameter")
 		} else if len(command.Tags) == 0 {
@@ -59,7 +61,7 @@ func delete(command parser.Command, tags []string) error {
 		baseDir := path.Base(command.Target)
 		destFile := path.Join(trashDir, baseDir + ".gz")
 
-		// Check if the file in the trash exists and change the filename if yes
+		// Check if the file in the trash already exists and change the filename if yes
 		destFile = checkIfDestExists(destFile)
 
 		// Create the database entry
@@ -89,7 +91,7 @@ func delete(command parser.Command, tags []string) error {
 		// Define the destination path for the trash
 		destFile := filepath.Join(trashDir, baseFile)
 
-		// Check if the file in the trash exists and change the filename if yes
+		// Check if the file in the trash already exists and change the filename if yes
 		destFile = checkIfDestExists(destFile)
 		
 		// Create the database entry
