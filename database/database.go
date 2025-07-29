@@ -6,12 +6,24 @@ import (
 	"fmt"
 	"os"
 	"path"
+	"strconv"
+	"time"
 
 	_ "github.com/glebarez/go-sqlite"
 )
 
 // Database object
 var Db *sql.DB
+
+// A row of the database
+type TrashRow struct {
+	Id int
+	Basename string
+	FromPath string
+	TrashPath string
+	DeletedAt time.Time
+	Tags string
+}
 
 // Initialize database, create Db object and create tables if not exist
 func InitDB() error {
@@ -54,7 +66,7 @@ func createTables() error {
 		"basename TEXT NOT NULL," +
         "from_path TEXT NOT NULL," +
 		"trash_path TEXT NOT NULL," +
-		"created_at DATETIME DEFAULT CURRENT_TIMESTAMP);"
+		"deleted_at DATETIME DEFAULT CURRENT_TIMESTAMP);"
 	if _, err := Db.Exec(createTrashTable); err != nil {
 		fmt.Println(err)
 		return errors.New("could not create trash table in database")
@@ -103,6 +115,48 @@ func Insert(basename string, from string, to string, tags []string) error {
 			fmt.Println(err)
 			return errors.New("could not create tags related to trash entry in database")
 		}		
+	}
+
+	return nil
+}
+
+// Select trash entry by id
+func SelectById(id int) (TrashRow, error) {
+	var row TrashRow
+	var idrow sql.NullInt32
+	selectId := "Select * FROM trash_table WHERE trash_id = " + strconv.Itoa(id)
+	err := Db.QueryRow(selectId).Scan(
+		&idrow,
+		&row.Basename,
+		&row.FromPath,
+		&row.TrashPath,
+		&row.DeletedAt,
+	)
+	if err != nil {
+		fmt.Println(err)
+		return row, errors.New("couldnt get trash object by id from database")
+	}
+	if idrow.Valid {
+		row.Id = int(idrow.Int32)
+	} else {
+		return row, errors.New("no entry with this id found")
+	}
+	
+	return row, nil
+}
+
+// Delete all entries by id
+func DeleteById(id int) error {
+	deleteTrash := "DELETE FROM trash_table WHERE trash_id = " + strconv.Itoa(id)
+	if _, err := Db.Exec(deleteTrash); err != nil {
+		fmt.Println("There is a problem with deleting a trash entry after uncompress")
+		return err
+	}
+	
+	deleteTags := "DELETE FROM tags_table WHERE trash_tag_id = " + strconv.Itoa(id)
+	if _, err := Db.Exec(deleteTags); err != nil {
+		fmt.Println("There is a problem with deleting the tags from trash after uncompress")
+		return err
 	}
 
 	return nil
