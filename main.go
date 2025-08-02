@@ -40,6 +40,9 @@ func main() {
 			}
 		case "restore":
 			fmt.Println("Restore an object in the trash")
+			if err := commands.RestoreCommand(command); err != nil {
+				fmt.Println(err)
+			}
 		case "empty":
 			fmt.Println("Empty the trash and free space")
 		case "help":

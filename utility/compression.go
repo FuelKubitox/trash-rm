@@ -135,10 +135,57 @@ func addFileToTar(tw *tar.Writer, path, relPath string) error {
     return err
 }
 
+// Uncompress a single file
+// source: path to compressed file with end .gz
+// dest: absolute path to the destination
+func UncompressFile(source string, dest string) error {
+	// Open compressed file
+	sfile, err := os.Open(source)
+	if err != nil {
+		fmt.Println(err)
+		return errors.New("couldnt open compressed file during uncompress")
+	}
+	defer sfile.Close()
+
+	// Create reader for file
+	reader := bufio.NewReader(sfile)
+	
+	// Read compressed data
+	data, err := gzip.NewReader(reader)
+	if err != nil {
+		fmt.Println(err)
+		return errors.New("couldnt read compressed data from file during uncompress")
+	}
+	
+	// Read all chunk data to buffer
+	buffer, err := io.ReadAll(data)
+	if err != nil {
+		fmt.Println(err)
+		return errors.New("coudlnt read all buffer data during uncompress")
+	}
+
+	// Create new file to write uncompressed data
+	dfile, err := os.Create(dest)
+	if err != nil {
+		fmt.Println(err)
+		return errors.New("couldnt create file for uncompressed data")
+	}
+	defer dfile.Close()
+
+	// Create writer to write uncompressed data to file
+	writer := bufio.NewWriter(dfile)
+
+	// Write uncompressed to file
+	writer.Write(buffer)
+
+	return nil
+}
+
+
 // Uncompress from trash
 // source: file to uncompress with suffix .gz at the end
 // dest: absolute path where the file or directory will be uncompressed to
-func Uncompress(source string, dest string) error {
+func UncompressDir(source string, dest string) error {
     // Open compressed file
     file, err := os.Open(source)
     if err != nil {

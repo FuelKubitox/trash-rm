@@ -17,14 +17,14 @@ func ListCommand(command parser.Command) error {
 	var err error
 	if len(command.Parameters) == 0 {
 		// If we want to list all trash objects from the database
-		result, err = listTrashAll()
+		result, err = database.SelectAll()
 		if err != nil {
 			fmt.Println("Couldnt get data from db")
 			return err
 		}
 	} else if len(command.Parameters) == 1 && command.Parameters[0] == "-t" && len(command.Tags) > 0 {
 		// if we want to list trash objects filtered by tags from the database
-		result, err = listTrashTags(command)
+		result, err = database.SelectWithTags(command.Tags)
 		if err != nil {
 			return err
 		}
@@ -37,39 +37,6 @@ func ListCommand(command parser.Command) error {
 		return err
 	}
 	return nil
-}
-
-// List all objects in trash without any filter
-func listTrashAll() (*sql.Rows, error) {
-	selectAll := "SELECT trash_id, basename, from_path, trash_path, deleted_at, GROUP_CONCAT(tags_table.tagname, ',') AS tags" +
-				" FROM trash_table LEFT JOIN tags_table" +
-				" ON trash_table.trash_id = tags_table.trash_tag_id"
-	result, err := database.Db.Query(selectAll)
-	if err != nil {
-		fmt.Println("Couldnt select all trash objects from the database")
-		return result, err
-	}
-	return result, nil
-}
-
-// List objects filtered by tags
-func listTrashTags(command parser.Command) (*sql.Rows, error) {
-	selectWithTags := "SELECT trash_id, basename, from_path, trash_path, deleted_at, GROUP_CONCAT(tags_table.tagname, ',') AS tags" +
-				" FROM trash_table LEFT JOIN tags_table" +
-				" ON trash_table.trash_id = tags_table.trash_tag_id WHERE "
-	count := len(command.Tags)
-	for i, tag := range command.Tags {
-		selectWithTags += "tags_table.tagname = '" + tag + "'"
-		if i < count - 1 {
-			selectWithTags += " AND "
-		}
-	}
-	result, err := database.Db.Query(selectWithTags)
-	if err != nil {
-		fmt.Println("Couldnt select trash objects with tags from database")
-		return result, err
-	}
-	return result, nil
 }
 
 // Take the query result and parse it to a TrashRow array struct

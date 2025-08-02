@@ -109,7 +109,10 @@ func delete(command parser.Command, tags []string) error {
 			fmt.Println(err)
 			return errors.New("couldnt remove source file after compression")
 		}
+
 	}
+	
+	fmt.Println("Finished!")
 
 	return nil
 }
@@ -127,9 +130,10 @@ func checkIfDestExists(dest string) string {
 		dir := path.Dir(dest)
 		file := path.Base(dest)
 		i := strings.LastIndex(file, "_")
-		if i == 0 {
+		if i == -1 {
 			i = strings.LastIndex(file, ".")
 		}
+		count++
 		dest = path.Join(dir, file[:i] + "_" + strconv.Itoa(count) + ".gz")
 		
 		_, err = os.Stat(dest)

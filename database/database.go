@@ -90,15 +90,10 @@ func createTables() error {
 func Insert(basename string, from string, to string, tags []string) error {
 	insertTrash := "INSERT INTO trash_table " +
 		"(basename, from_path, trash_path) VALUES (?, ?, ?);"
-	statement, err := Db.Prepare(insertTrash)
+	result, err := Db.Exec(insertTrash, basename, from, to)
 	if err != nil {
 		fmt.Println(err)
-		return errors.New("couldnt prepare INSERT")
-	}
-	result, err := statement.Exec(basename, from, to)
-	if err != nil {
-		fmt.Println(err)
-		return errors.New("could not create trash entry in database")
+		return errors.New("couldnt insert into database")
 	}
 
 	// Loop through the tags array and add the tag to tags_table if they exist
@@ -118,6 +113,41 @@ func Insert(basename string, from string, to string, tags []string) error {
 	}
 
 	return nil
+}
+
+// Select all
+func SelectAll() (*sql.Rows, error) {
+	selectAll := "SELECT trash_id, basename, from_path, trash_path, deleted_at, GROUP_CONCAT(tags_table.tagname, ',') AS tags" +
+				" FROM trash_table LEFT JOIN tags_table" +
+				" ON trash_table.trash_id = tags_table.trash_tag_id" +
+				" GROUP BY trash_table.trash_id, basename, from_path, trash_path, deleted_at"
+	result, err := Db.Query(selectAll)
+	if err != nil {
+		fmt.Println("Couldnt select all trash objects from the database")
+		return result, err
+	}
+	return result, nil
+}
+
+// Select with tags
+func SelectWithTags(tags []string) (*sql.Rows, error) {
+	selectWithTags := "SELECT trash_id, basename, from_path, trash_path, deleted_at, GROUP_CONCAT(tags_table.tagname, ',') AS tags" +
+				" FROM trash_table LEFT JOIN tags_table" +
+				" ON trash_table.trash_id = tags_table.trash_tag_id WHERE "
+	count := len(tags)
+	for i, tag := range tags {
+		selectWithTags += "tags_table.tagname = '" + tag + "'"
+		if i < count - 1 {
+			selectWithTags += " AND "
+		}
+	}
+	selectWithTags += " GROUP BY trash_table.trash_id, basename, from_path, trash_path, deleted_at"
+	result, err := Db.Query(selectWithTags)
+	if err != nil {
+		fmt.Println("Couldnt select trash objects with tags from database")
+		return result, err
+	}
+	return result, nil
 }
 
 // Select trash entry by id
