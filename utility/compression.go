@@ -2,7 +2,6 @@ package utility
 
 import (
 	"archive/tar"
-	"bufio"
 	"compress/gzip"
 	"errors"
 	"fmt"
@@ -23,35 +22,23 @@ func CompressFile(source string, dest string) error {
 	}
 	defer sfile.Close()
 
-	// Read bytes to buffer
-	read := bufio.NewReader(sfile)
-
-	// Read all bytes
-	data, err := io.ReadAll(read)
-	if err != nil {
-		fmt.Println(err)
-		return errors.New("couldnt read all bytes out of the buffer from the file during compress")
-	}
-
-	// Create compressed file
+    // Create compressed file
 	dfile, err := os.Create(dest)
 	if err != nil {
 		fmt.Println(err)
 		return errors.New("couldnt create compressed file during compress")
 	}
+    defer dfile.Close()
 
-	// Open gzip writer
-	write, err := gzip.NewWriterLevel(dfile, gzip.BestSpeed)
+	// Create gz writer
+	gzipWriter := gzip.NewWriter(dfile)
+    defer gzipWriter.Close()
+
+	// Copy data from the source file to the gz writer
+	_, err = io.Copy(gzipWriter, sfile)
 	if err != nil {
-		fmt.Println(err)
-		return errors.New("couldnt open the gip writer during compress")
+		fmt.Println("Couldnt copy the data to the compressed file")
 	}
-
-	// Write compressed data to file
-	write.Write(data)
-
-	// Close the file writer
-	write.Close()
 
 	return nil
 }
@@ -148,35 +135,21 @@ func UncompressFile(source string, dest string) error {
 	defer sfile.Close()
 
 	// Create reader for file
-	reader := bufio.NewReader(sfile)
-	
-	// Read compressed data
-	data, err := gzip.NewReader(reader)
-	if err != nil {
-		fmt.Println(err)
-		return errors.New("couldnt read compressed data from file during uncompress")
-	}
-	
-	// Read all chunk data to buffer
-	buffer, err := io.ReadAll(data)
-	if err != nil {
-		fmt.Println(err)
-		return errors.New("coudlnt read all buffer data during uncompress")
-	}
+	gzipReader, _ := gzip.NewReader(sfile)
 
-	// Create new file to write uncompressed data
-	dfile, err := os.Create(dest)
+    // Create destination file
+    dfile, err := os.Create(dest)
+    if err != nil {
+        fmt.Println(err)
+        return errors.New("couldnt create destination file during uncompress")
+    }
+    defer dfile.Close()
+
+	// Copy data from the gz writer to the destination file
+	_, err = io.Copy(dfile, gzipReader)
 	if err != nil {
-		fmt.Println(err)
-		return errors.New("couldnt create file for uncompressed data")
+		fmt.Println("Couldnt copy the gz writer data to the destination file")
 	}
-	defer dfile.Close()
-
-	// Create writer to write uncompressed data to file
-	writer := bufio.NewWriter(dfile)
-
-	// Write uncompressed to file
-	writer.Write(buffer)
 
 	return nil
 }
