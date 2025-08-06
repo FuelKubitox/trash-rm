@@ -86,10 +86,10 @@ func delete(command parser.Command, tags []string) error {
 		index := strings.LastIndex(baseFile, ".")
 	
 		// Change suffix to .gz
-		baseFile = baseFile[:index] + ".gz"
+		gzFile := baseFile[:index] + ".gz"
 
 		// Define the destination path for the trash
-		destFile := filepath.Join(trashDir, baseFile)
+		destFile := filepath.Join(trashDir, gzFile)
 
 		// Check if the file in the trash already exists and change the filename if yes
 		destFile = checkIfDestExists(destFile)

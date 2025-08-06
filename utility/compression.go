@@ -100,7 +100,7 @@ func CompressDir(source string, dest string) error {
             return err
         }
 
-        // Fortschritt ausgeben
+        // Print progress
         printProgress(i+1, total, relPath)
 	}
 

@@ -166,6 +166,11 @@ func restoreCommand(args []string, command Command) (Command, error) {
 
 // Delete the objects in the trash and free space
 func emptyCommand(args []string, command Command) (Command, error) {
+	if len(args) == 1 {
+		command.Action = "empty"
+	} else {
+		return command, errors.New("wrongArguments")
+	}
 	return command, nil
 }
 

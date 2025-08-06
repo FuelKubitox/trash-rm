@@ -1,10 +1,12 @@
 #!/bin/bash
 
+BINARY=trm
+
 cd $(dirname "$0")
-go build main.go
+go build -o $BINARY main.go 
 if [ -d "bin" ]; then
-    mv main bin/
+    mv $BINARY bin/
 else
     mkdir bin
-    mv main bin/
+    mv $BINARY bin/
 fi

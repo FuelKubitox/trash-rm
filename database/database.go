@@ -191,3 +191,51 @@ func DeleteById(id int) error {
 
 	return nil
 }
+
+// If we delete all objects in trash we just drop all tables later
+func DropTables() error {
+	dropTrash := "DROP TABLE IF EXISTS trash_table"
+	if _, err := Db.Exec(dropTrash); err != nil {
+		fmt.Println("Couldnt drop trash_table")
+		return err
+	}
+	dropTags := "DROP TABLE IF EXISTS tags_table"
+	if _, err := Db.Exec(dropTags); err != nil {
+		fmt.Println("Couldnt drop tags_table")
+		return err
+	}
+
+	return nil
+}
+
+// Take the query result and parse it to a TrashRow array struct
+func ParseDbData(result *sql.Rows) ([]TrashRow, error) {
+	var trashList []TrashRow
+	var row TrashRow
+	// To handle the case that the tags result is NULL for tags, we use that datatype
+	var tags sql.NullString
+	for result.Next() {
+		// We always save the id first in this variable to check if id is valid
+		var id sql.NullInt32
+		if err := result.Scan(
+			&id,
+			&row.Basename,
+			&row.FromPath,
+			&row.TrashPath,
+			&row.DeletedAt,
+			&tags,
+		); err != nil {
+			fmt.Println("Couldnt scan result from db")
+			return trashList, err
+		}
+		// If id is valid set id in TrashRow otherwise there is no database entry
+		if id.Valid {
+			row.Id = int(id.Int32)
+		} else {
+			return trashList, errors.New("no entries found")
+		}
+		row.Tags = tags.String
+		trashList = append(trashList, row)
+	}
+	return trashList, nil
+}

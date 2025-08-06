@@ -2,7 +2,6 @@ package commands
 
 import (
 	"database/sql"
-	"errors"
 	"fmt"
 
 	"trash-rm/database"
@@ -29,7 +28,7 @@ func ListCommand(command parser.Command) error {
 			return err
 		}
 	}
-	trashList, err = parseDbData(result)
+	trashList, err = database.ParseDbData(result)
 	if err != nil {
 		return err
 	}
@@ -37,36 +36,6 @@ func ListCommand(command parser.Command) error {
 		return err
 	}
 	return nil
-}
-
-// Take the query result and parse it to a TrashRow array struct
-func parseDbData(result *sql.Rows) ([]database.TrashRow, error) {
-	var trashList []database.TrashRow
-	var row database.TrashRow
-	var tags sql.NullString
-	for result.Next() {
-		var id sql.NullInt32
-		err := result.Scan(
-			&id,
-			&row.Basename,
-			&row.FromPath,
-			&row.TrashPath,
-			&row.DeletedAt,
-			&tags,
-		)
-		if id.Valid {
-			row.Id = int(id.Int32)
-		} else {
-			return trashList, errors.New("no entries found")
-		}
-		row.Tags = tags.String
-		if err != nil {
-			fmt.Println("Couldnt scan result from db")
-			return trashList, err
-		}
-		trashList = append(trashList, row)
-	}
-	return trashList, nil
 }
 
 // Show the results form the array struct TrashRow

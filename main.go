@@ -45,6 +45,11 @@ func main() {
 			}
 		case "empty":
 			fmt.Println("Empty the trash and free space")
+			if err := commands.EmptyCommand(command); err != nil {
+				fmt.Println(err)
+			}
+		case "sync":
+			fmt.Println("Sync the database with trashes in the filesystem")
 		case "help":
 			fmt.Println("Show help")
 		default:
