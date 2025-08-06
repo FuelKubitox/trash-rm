@@ -50,6 +50,9 @@ func main() {
 			}
 		case "sync":
 			fmt.Println("Sync the database with trashes in the filesystem")
+			if err := commands.SyncCommand(command); err != nil {
+				fmt.Println(err)
+			}
 		case "help":
 			fmt.Println("Show help")
 		default:

@@ -176,6 +176,11 @@ func emptyCommand(args []string, command Command) (Command, error) {
 
 // Sync the database with the trash on the filesystem
 func syncCommand(args []string, command Command) (Command, error) {
+	if len(args) == 1 {
+		command.Action = "sync"
+	} else {
+		return command, errors.New("wrongArguments")
+	}
 	return command, nil
 }
 

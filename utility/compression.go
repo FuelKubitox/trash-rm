@@ -148,7 +148,8 @@ func UncompressFile(source string, dest string) error {
 	// Copy data from the gz writer to the destination file
 	_, err = io.Copy(dfile, gzipReader)
 	if err != nil {
-		fmt.Println("Couldnt copy the gz writer data to the destination file")
+		fmt.Println(err)
+        return errors.New("couldnt copy the gz writer data to the destination file")
 	}
 
 	return nil
