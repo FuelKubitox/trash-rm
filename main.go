@@ -34,27 +34,27 @@ func main() {
 				fmt.Println(err)
 			}
 		case "delete":
-			fmt.Println("Start moving target(s) to trash...")
+			fmt.Println("Start moving file/folder to trash...")
 			if err := commands.DeleteCommand(command); err != nil {
 				fmt.Println(err)
 			}
 		case "restore":
-			fmt.Println("Restore an object in the trash")
+			fmt.Println("Restore an object in the trash...")
 			if err := commands.RestoreCommand(command); err != nil {
 				fmt.Println(err)
 			}
 		case "empty":
-			fmt.Println("Empty the trash and free space")
+			fmt.Println("Empty the trash and free space...")
 			if err := commands.EmptyCommand(command); err != nil {
 				fmt.Println(err)
 			}
 		case "sync":
-			fmt.Println("Sync the database with trashes in the filesystem")
+			fmt.Println("Sync the database with trashes on the filesystem...")
 			if err := commands.SyncCommand(command); err != nil {
 				fmt.Println(err)
 			}
 		case "help":
-			fmt.Println("Show help")
+			commands.HelpCommand()
 		default:
 			fmt.Println("Unknow action!")
 	}

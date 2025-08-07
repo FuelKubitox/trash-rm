@@ -34,6 +34,7 @@ func SyncCommand(command parser.Command) error {
 
 // Start synchronize
 func sync(trashList []database.TrashRow) error {
+	fmt.Println("Start deleting database entries pointing to files that doesnt exist...")
 	// Loop through all database entries and check if the file exists
 	for _, row := range trashList {
 		_, err := os.Stat(row.TrashPath)
