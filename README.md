@@ -14,7 +14,9 @@ little tool.
 Clone that repository, make sure you have golang installed and execute the build.sh script. It
 compiles the project to a binary in the bin/ directory.
 Then you can use
+
 ```
 ./trm help
 ```
+
 to show all available commands.
