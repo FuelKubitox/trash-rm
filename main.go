@@ -14,6 +14,12 @@ var command parser.Command
 var err error
 
 func main() {
+	// With no arguments do nothing
+	if len(os.Args) <= 1 {
+		fmt.Println("Missing arguments. For more information enter trm help")
+		os.Exit(0)
+	}
+
 	// Parse passed arguments
 	if command, err = parser.Parse(os.Args); err != nil {
 		fmt.Println(err)
